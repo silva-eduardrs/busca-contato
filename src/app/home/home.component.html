@@ -1,0 +1,114 @@
+<app-header></app-header>
+
+<div class="container-fluid h-90">
+  <div class="row h-100p">
+    <main class="col-md-12 ms-sm-auto col-lg-12 px-md-4 h-100p overflow-y-scroll">
+      <h4 class="mt-32">Busca Contatos</h4>
+      <hr>
+      <div class="mt-16">
+        <div class="row">
+          <div class="col-md-3">
+            <ng-select
+              [(ngModel)]="estadoSelecionado"
+              notFoundText="Opção não encontrada"
+              (change)="alteracaoEstado()"
+            >
+              <ng-option *ngFor="let estado of estados" [value]="estado.sigla">
+                {{ estado.nome }}
+              </ng-option>
+            </ng-select>
+          </div>
+          <div class="col-md-6">
+            <ng-select
+              [(ngModel)]="municipioSelecionado"
+              notFoundText="Opção não encontrada"
+              [disabled]="!estadoSelecionado"
+            >
+              <ng-option *ngFor="let municipio of municipios" [value]="municipio">
+                {{ municipio.name }}
+              </ng-option>
+            </ng-select>
+          </div>
+          <div class="col-md-3 d-flex align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [value]="true" id="faixaMunicipio" [(ngModel)]="municipiosPorFaixa" (change)="municipioSelecionado = undefined; buscarMunicipio()">
+              <label class="form-check-label" for="faixaMunicipio">
+                População acima de 80K
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-16">
+          <div class="col-md-10">
+            <input type="text" class="form-control" id="pesquisa" placeholder="Pesquisar" [(ngModel)]="textoPesquisa" [disabled]="!municipioSelecionado">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !textoPesquisa}" (click)="buscar()">Pesquisar</button>
+          </div>
+        </div>
+        <div class="row mt-16">
+          <div class="col-md-12 d-flex">
+            <div class="expressoes" *ngFor="let expressao of expressoes">
+              <button type="button" class="btn btn-outline-secondary" [disabled]="!municipioSelecionado" (click)="selecionarPalavra(expressao.palavra)">{{expressao.palavra}}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="map" class="mt-32" style="width:100%;height:400px"></div>
+      <table class="table table-striped mt-32" *ngIf="infos.length">
+        <thead>
+          <tr>
+            <th scope="col" [style.width]="'5%'">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" [value]="true" [(ngModel)]="todosSelecionados" (click)="selecionarTodos()">
+              </div>
+            </th>
+            <th scope="col" [style.width]="'30%'">Nome</th>
+            <th scope="col" [style.width]="'40%'">Endereço</th>
+            <th scope="col" [style.width]="'15%'">Telefone</th>
+            <th scope="col" [style.width]="'5%'">Site</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let info of infos; let i = index">
+            <th scope="row">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" [value]="true" [(ngModel)]="info.selecionado">
+              </div>
+            </th>
+            <td>{{ info.name }}</td>
+            <td>{{ info.formatted_address }}</td>
+            <td>
+              <div class="contato">
+                {{ info.formatted_phone_number }}
+                <img src="assets/images/wpp.png" alt="whatsapp logo" class="logo-wpp" (click)="enviarMensagem(info.formatted_phone_number)" *ngIf="info.formatted_phone_number">
+              </div>
+            </td>
+            <td>
+              <a [href]="info.website" target="_blank" *ngIf="info.website">
+                <button type="button" class="btn btn-success btn-link-externo">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"></path>
+                    <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"></path>
+                  </svg>
+                </button>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="row justify-content-between mt-16 mb-16" *ngIf="infos.length">
+        <div class="col-md-3">
+          <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !contatoSelecionado()}" (click)="exportarContatosSelecionados()">Exportar Contatos Selecionados</button>
+        </div>
+        <div class="col-md-3">
+          <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !paginacao!.hasNextPage}" (click)="buscarProximosResultados()">Carregar Mais Resultados</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="backdrop-loading" *ngIf="buscando">
+  <app-loading></app-loading>
+</div>
