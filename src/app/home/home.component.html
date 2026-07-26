@@ -43,7 +43,7 @@
             <input type="text" class="form-control" id="pesquisa" placeholder="Pesquisar" [(ngModel)]="textoPesquisa" [disabled]="!municipioSelecionado">
           </div>
           <div class="col-md-2">
-            <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !textoPesquisa}" (click)="buscar()">Pesquisar</button>
+            <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !textoPesquisa}" (click)="buscarLegacy()">Pesquisar</button>
           </div>
         </div>
         <div class="row mt-16">
@@ -55,7 +55,7 @@
         </div>
       </div>
       <div id="map" class="mt-32" style="width:100%;height:400px"></div>
-      <table class="table table-striped mt-32" *ngIf="infos.length">
+      <table class="table table-striped mt-32" *ngIf="infos?.length">
         <thead>
           <tr>
             <th scope="col" [style.width]="'5%'">
@@ -97,12 +97,12 @@
           </tr>
         </tbody>
       </table>
-      <div class="row justify-content-between mt-16 mb-16" *ngIf="infos.length">
+      <div class="row justify-content-between mt-16 mb-16" *ngIf="infos?.length">
         <div class="col-md-3">
           <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !contatoSelecionado()}" (click)="exportarContatosSelecionados()">Exportar Contatos Selecionados</button>
         </div>
         <div class="col-md-3">
-          <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: !paginacao!.hasNextPage}" (click)="buscarProximosResultados()">Carregar Mais Resultados</button>
+          <button type="button" class="btn btn-primary w-100" [ngClass]="{disabled: true}" (click)="buscarProximosResultados()">Carregar Mais Resultados</button>
         </div>
       </div>
     </main>

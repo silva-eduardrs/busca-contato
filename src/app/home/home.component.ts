@@ -1,5 +1,3 @@
-import {} from 'googlemaps';
-
 import { Component, OnInit } from '@angular/core';
 
 import { Estado } from '../shared/interfaces/estados.interface';
@@ -16,25 +14,29 @@ import { ArquivoService } from '../shared/services/arquivo.service';
 })
 export class HomeComponent implements OnInit {
   textoPesquisa: string = '';
-  infos: Array<google.maps.places.PlaceResult & { selecionado?: boolean }> = [];
+  infos: any; //Array<google.maps.places.PlaceResult & { selecionado?: boolean }> = [];
   expressoes: Array<ExpressaoPesquisada> = [];
   estados: Array<Estado> = [];
   estadoSelecionado: string = '';
   municipios: Array<Municipio> = [];
   municipioSelecionado: Municipio | undefined;
   municipiosPorFaixa: boolean = true;
-  paginacao: google.maps.places.PlaceSearchPagination | undefined;
+  paginacao: any; //google.maps.places.PlaceSearchPagination | undefined;
   municipiosPorEstado: Array<any> = [];
   estado: Estado | undefined;
   todosSelecionados: boolean = false;
-  query: {location: google.maps.LatLng; query: string; fields: Array<string>} | undefined;
+  query:
+    | { location: google.maps.LatLng; query: string; fields: Array<string> }
+    | undefined;
+
+  nextPageToken: any;
 
   buscando = false;
 
   constructor(
     private ibgeService: IbgeService,
     private municipiosService: MunicipiosService,
-    private arquivoService: ArquivoService
+    private arquivoService: ArquivoService,
   ) {}
 
   ngOnInit(): void {
@@ -48,8 +50,8 @@ export class HomeComponent implements OnInit {
           a.nome.toUpperCase() < b.nome.toLocaleUpperCase()
             ? -1
             : a.nome.toUpperCase() > b.nome.toLocaleUpperCase()
-            ? 1
-            : 0;
+              ? 1
+              : 0;
         return valor;
       });
     });
@@ -63,16 +65,83 @@ export class HomeComponent implements OnInit {
   buscarMunicipio() {
     if (this.municipiosPorFaixa) {
       this.municipios = this.municipiosService.listaMunicipiosFaixaPopulacao(
-        this.estadoSelecionado
+        this.estadoSelecionado,
       );
     } else {
       this.municipios = this.municipiosService.listaMunicipios(
-        this.estadoSelecionado
+        this.estadoSelecionado,
       );
     }
   }
 
-  buscar() {
+  async buscarNovo() {
+    this.buscando = true;
+    this.infos = [];
+
+    const [{ Place }, { AdvancedMarkerElement }] = await Promise.all([
+      google.maps.importLibrary('places'),
+      google.maps.importLibrary('marker'),
+    ]);
+
+    const location = new google.maps.LatLng(
+      this.municipioSelecionado!.lat,
+      this.municipioSelecionado!.lon,
+    );
+
+    const map = new google.maps.Map(document.getElementById('map')!, {
+      center: location,
+      zoom: 15,
+    });
+
+    const request = {
+      textQuery: this.textoPesquisa,
+      fields: ['displayName'],
+      includedType: '', // Restrict query to a specific type (leave blank for any).
+      locationBias: map.getCenter(),
+      language: 'en-US',
+      maxResultCount: 20,
+    };
+
+    const { places } = await Place.searchByText(request);
+
+    // this.nextPageToken = nextPageToken;
+
+    if (places.length) {
+
+      // Loop through and get all the results.
+      places.forEach(async (result: any) => {
+        const place = new Place({
+          id: result.id,
+        });
+
+        await place.fetchFields({
+          fields: [
+            'displayName',
+            'formattedAddress',
+            'nationalPhoneNumber',
+            'websiteURI',
+          ],
+        });
+
+        if (place.nationalPhoneNumber || place.websiteURI) {
+          const info = {
+            name: place.displayName,
+            formatted_address: place.formattedAddress,
+            formatted_phone_number: place.nationalPhoneNumber,
+            website: place.websiteURI,
+            selecionado: false
+          }
+          this.infos.push(info);
+          this.buscando = false;
+        }
+      });
+    } else {
+      console.log('No results');
+      this.buscando = false;
+    }
+  }
+
+  buscarLegacy() {
     this.buscando = true;
     this.infos = [];
     const location = new google.maps.LatLng(
@@ -157,17 +226,19 @@ export class HomeComponent implements OnInit {
   }
 
   selecionarTodos() {
-    this.infos.forEach((info) => (info.selecionado = !this.todosSelecionados));
+    this.infos.forEach(
+      (info: any) => (info.selecionado = !this.todosSelecionados),
+    );
   }
 
   contatoSelecionado(): boolean {
-    return this.infos.some((info) => info.selecionado);
+    return this.infos.some((info: any) => info.selecionado);
   }
 
   exportarContatosSelecionados() {
     const cabecalho = 'Nome,Endereco,Telefone,Site';
     const infosSelecionadas: Array<any> = [];
-    this.infos.forEach((info) => {
+    this.infos.forEach((info: any) => {
       if (info.selecionado) {
         infosSelecionadas.push({
           nome: info.name.replaceAll(',', ' - '),
@@ -184,7 +255,7 @@ export class HomeComponent implements OnInit {
     this.arquivoService.gerarCsv(
       cabecalho,
       infosSelecionadas,
-      this.municipioSelecionado!.name
+      this.municipioSelecionado!.name,
     );
   }
 }
